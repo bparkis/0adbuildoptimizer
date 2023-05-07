@@ -1,0 +1,208 @@
+# set up the map. forest 10 0 5000 means there is a forest at coordinate (10, 0) - which is 10 seconds of walk time away from the CC - with 5000 wood available.
+# 5000 is around the amount of wood you would chop before you would need a second storehouse.
+forest 10 0 5000
+forest 11 0 5000
+forest 12 0 5000
+forest 13 0 5000
+forest 14 0 5000
+forest 15 0 5000
+berries -5 0 1000
+chicken 0 0 400
+
+skipby 1 # show a summary every 1 second
+debugend # always throw an exception when we finish, to allow pdb debugging of the detailed state. e.g. with python3 -m pdb boom.py builds/maurya1.txt
+#stopwhen pop > 50
+# This will report the first time when wood went over 300
+# and stayed that way until the end. Useful for deciding when we are
+# able to build stuff without interfering with any other production.
+reportsurplus 0 300 0 0
+
+
+# men chop with elephant dropsite, women make berries farmstead, horse on chickens, elephant makes a house at wood
+chop(selectWorkers("male"))
+build(selectWorkers("female"), "farmstead", pos=(-5, 0))
+walk(selectWorkers("elephant"), (10,0)) # walk ele to forest
+chicken(selectWorkers("horse"))
+berries(selectWorkers("female"), queued=True)
+
+# The elephant's house is queued meaning it will happen after the
+# elephant walks to the wood. A non-queued order will just
+# replace any existing orders.
+build(selectWorkers("elephant"), "house", queued=True, pos=(10,0))
+
+# train 4 initial women at the CC
+train(cc, "female", 4)
+
+# train batches at the CC that are "maximum batches," as much as food and pop allows, up to a batch of 5
+# Do this "repeating," i.e. repeatedly make batches until the order is canceled
+# also queue it behind the previous train command
+train(cc, "female", 5, queued=True, repeating=True, maxBatching=True)
+
+# Set a schedule for what the women will do after being produced.
+# Women produced from the CC will go chop wood between population 10 and 21.
+# between population 22 and 26, they will go on berries.
+# between population 27 and 29, they will chop wood
+# after population 30 they will build fields and start farming
+setWaypointSchedule(cc, [(11, ((-5, 0), "berries")), (13, ((10, 0), "chop")), (28, (None, "farm")), (42, (None, "idle")), (47, (None, "chop"))])
+
+# wait until 28 seconds into the game, because now the farmstead is done and we can research the berry upgrade
+time 00:28
+research(selectBuilding("farmstead"), "up_gather")
+
+# At 0:44 the elephant has made his first house
+# and at 0:46 we have just enough wood to start a second
+time 00:46
+build(selectWorkers("elephant"), "house")
+# If uncommented, this will stop the simulation as soon as the pop goes over 50.
+
+# at 1:17 the elephant is done with the second house.  There's not
+# enough room for the elephant to make more than two houses while
+# still being a wood dropsite and leaving enough space for the
+# elephant to get out, so we'll take a man off of woodcutting.  The
+# man will make unlimited houses as a repeating order. (All of these
+# houses will be at 10, 1)
+time 01:17
+build(selectWorkers("male", num=1), "house", pos=(10, 1), repeating=True)
+# also queue up an order for berries women to go onto farms
+farm(selectWorkers("female", "berries"), queued=True)
+
+# at 3:23 we have 500 spare wood. We'll transfer 5 women off of wood
+# and onto farms, in preparation for the first barracks.
+time 03:23
+farm(selectWorkers("female", "chop", num=5))
+
+time 03:28
+# These are two women just produced from the CC
+build(selectWorkers("female", "idle"), "barracks", (3, 3))
+
+time 03:49
+# four more women just produced from the CC to help build houses and the barracks
+build(selectWorkers("female", "idle", num=1), "house", (10, 1), repeating=True)
+build(selectWorkers("female", "idle"), "barracks", (3, 3))
+
+time 03:53
+research(selectBuilding("farmstead"), "up_farm1")
+
+time 04:35
+# barracks is done
+# we need another house builder. She can help the male housebuilder at (10, 1)
+farm(selectWorkers("female", "idle", num=5))
+chop(selectWorkers("female", "idle"))
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+setWaypoint(selectBuilding("barracks"), (10, 0), "chop")
+
+time 05:47
+# enough wood for another barracks
+build(selectWorkers("female", "chop", num=5), "barracks", (3, 4))
+farm(previousWorkerSelection(), queued=True)
+
+time 06:05
+build(selectWorkers("female", "chop", num=5), "barracks", (4, 4))
+farm(previousWorkerSelection(), queued=True)
+
+time 06:38
+# barracks done
+# selectBuilding will get us the idle barracks preferentially
+setWaypoint(selectBuilding("barracks"), (10, 0), "chop")
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+
+time 06:56
+setWaypoint(selectBuilding("barracks"), (10, 0), "chop")
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+
+time 06:36
+# We've made 67 women. That's probably enough. Switching to men from the cc.
+train(cc, "male", 1, repeating=True)
+
+time 07:09
+# forest dead, move on.
+build(selectWorkers("male female", "chop"), "storehouse", pos=(11, 0), queued=True)
+chop(selectWorkers("male female", "chop"), pos=(11, 0), queued=True)
+chop(selectWorkers("male", "walk"), pos=(11, 0), queued=True)
+setWaypoint(selectBuilding("barracks", num=1), (11, 0), "chop")
+setWaypoint(selectBuilding("barracks", num=2), (11, 0), "chop")
+setWaypoint(selectBuilding("barracks", num=3), (11, 0), "chop")
+setWaypoint(cc, (11, 0), "chop")
+
+time 07:27
+# finally!
+build(selectWorkers("female", "chop", num=1), "house", (10, 1), repeating=True)
+
+time 08:00
+build(selectWorkers("female", "chop", num=5), "barracks", (5, 5))
+farm(previousWorkerSelection(), queued=True)
+build(selectWorkers("male", "chop", num=5), "storehouse", (12, 0))
+chop(previousWorkerSelection(), pos=(12,0), queued=True)
+
+time 08:31
+build(selectWorkers("female", "chop", num=5), "barracks", (5, 5))
+farm(previousWorkerSelection(), queued=True)
+build(selectWorkers("male", "chop", num=1), "house", (10, 1), repeating=True)
+research(selectBuilding("storehouse"), "up_chop1")
+
+time 08:51
+setWaypoint(selectBuilding("barracks"), (12, 0), "chop")
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+
+time 09:02
+build(selectWorkers("female", "chop", num=5), "barracks", (5, 5))
+farm(previousWorkerSelection(), queued=True)
+
+time 09:17
+build(selectWorkers("female", "chop", num=5), "barracks", (6, 6))
+farm(previousWorkerSelection(), queued=True)
+build(selectWorkers("female", "chop", num=1), "house", (10, 1), repeating=True)
+farm(selectWorkers("female", "chop", num=5))
+
+time 09:36
+chop(selectWorkers("male female", "chop"), pos=(12, 0), queued=True)
+chop(selectWorkers("male", "walk"), pos=(12, 0), queued=True)
+setWaypoint(selectBuilding("barracks", num=1), (12, 0), "chop")
+setWaypoint(selectBuilding("barracks", num=2), (12, 0), "chop")
+setWaypoint(selectBuilding("barracks", num=3), (12, 0), "chop")
+setWaypoint(cc, (12, 0), "chop")
+
+time 09:40
+build(selectWorkers("female", "chop", num=5), "barracks", (7, 7))
+farm(previousWorkerSelection(), queued=True)
+setWaypoint(selectBuilding("barracks"), (13, 0), "chop")
+build(selectWorkers("male", "chop", num=1), "storehouse", pos=(13,0))
+chop(previousWorkerSelection(), queued=True)
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+
+time 09:46
+setWaypoint(selectBuilding("barracks"), (13, 0), "chop")
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+
+time 09:54
+build(selectWorkers("female", "chop", num=5), "barracks", (8, 8))
+farm(previousWorkerSelection(), queued=True)
+setWaypoint(selectBuilding("barracks"), (13, 0), "chop")
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+
+time 10:10
+build(selectWorkers("female", "chop", num=5), "barracks", (9, 9))
+farm(previousWorkerSelection(), queued=True)
+setWaypoint(selectBuilding("barracks"), (13, 0), "chop")
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+build(selectWorkers("male", "chop", num=3), "house", (10, 2), repeating=True)
+
+time 10:15
+build(selectWorkers("female", "chop", num=5), "barracks", (9, 9))
+farm(previousWorkerSelection(), queued=True)
+
+time 10:31
+setWaypoint(selectBuilding("barracks"), (13, 0), "chop")
+train(selectBuilding("barracks"), "male", 1, repeating=True)
+
+build(selectWorkers("female", "chop", num=5), "barracks", (10, 10))
+farm(previousWorkerSelection(), queued=True)
+
+time 12:00
+
+# time 06:42
+# build(selectWorkers("female", "chop", num=5), "barracks", (4, 4))
+# farm(previousWorkerSelection(), queued=True)
+
+# time 08:00
+# #research(selectBuilding("storehouse"), "up_chop1")

@@ -28,7 +28,7 @@ There are a few simplifying differences from 0ad to be mindful of.
  * If you tell a worker to farm at a point, they will first walk there, then see if there is a cc or farmstead there, and if not, they will build a farmstead. Then they will see if there are enough fields for them to take a spot, and if not, they will build them.
 
 
-If something funny happens where the regular printout isn't giving you enough information, you may wish to inspect the Python state of the simulation. For this you need to know Python. You can then use the "debugend" command to cause the simulator to throw an exception when it finishes. Then run python3 -m pdb boom.py builds/mybuild.txt , wait for the exception to trigger when the run finishes, and inspect the variables with pdb.
+If something funny happens where the regular printout isn't giving you enough information, you may wish to inspect the Python state of the simulation. For this you need to know Python. You can then use the "debugEnd()" command to cause the simulator to throw an exception when it finishes. Then run python3 -m pdb boom.py builds/mybuild.txt , wait for the exception to trigger when the run finishes, and inspect the variables with pdb.
 
 
 ### Todos
@@ -43,3 +43,7 @@ If you feel like implementing these feel free to share.
 * The effect of baskets and wheelbarrow upgrades on net gather rates
 * Add approximate walk time between foundations when a unit is building multiple buildings "at a point"
 * More accurate farming rate for <5 farmers on a field
+* Allow multiple-line Python code, such as loops, in the command file.
+* Automatic build optimization (e.g. you tell it to try a set of variations on your build, parameterized by a variable or two, and it tells you which one scores highest according to a score function you supply.)
+
+Note: it is recommended to use the Show Resource Income mod (find it on the forums) to help measure net gather rates.

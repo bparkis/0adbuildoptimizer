@@ -1,6 +1,6 @@
 ## 0ad Build Optimizer
 
-0ad Build Optimizer is a tool to help you optimize your build orders in the RTS game 0ad. First you write a sequence of commands describing your build order, and then you simulate the outcome of these commands so you can see how you quickly you reach a given population, whether you run out of resources or houses, whether you unintentionally bank up excess resources, etc. Then you edit your build order to fix any problems and improve it.
+0ad Build Optimizer is a tool to help you optimize your build orders in the RTS game 0ad. First you write a sequence of commands describing your build order, and then you simulate the outcome of these commands so you can see how quickly you reach a given population, whether you run out of resources or houses, whether you unintentionally bank up excess resources, etc. Then you edit your build order to fix any problems and improve it.
 
 You could use 0ad itself to do this, playing out your builds manually, but 0ad Build Optimizer has certain advantages.
 

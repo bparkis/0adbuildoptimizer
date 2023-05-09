@@ -1,4 +1,4 @@
-##0ad Build Optimizer
+## 0ad Build Optimizer
 
 0ad Build Optimizer is a tool to help you optimize your build orders in the RTS game 0ad. First you write a sequence of commands describing your build order, and then you simulate the outcome of these commands so you can see how you quickly you reach a given population, whether you run out of resources or houses, whether you unintentionally bank up excess resources, etc. Then you edit your build order to fix any problems and improve it.
 
@@ -10,7 +10,7 @@ You could use 0ad itself to do this, playing out your builds manually, but 0ad B
 
 The downside, of course, is that 0ad Build Optimizer is not a completely perfect simulation of 0ad. Also it takes practice to accurately play a given build order. So it is recommended to manually test and fine-tune your build order in the full game, after designing it with 0ad Build Optimizer.
 
-###How to use it
+### How to use it
 
  * Write your command file, such as builds/mybuild.txt. Use builds/maurya1.txt as an example.
  * Run python3 boom.py builds/mybuild.txt
@@ -31,10 +31,15 @@ There are a few simplifying differences from 0ad to be mindful of.
 If something funny happens where the regular printout isn't giving you enough information, you may wish to inspect the Python state of the simulation. For this you need to know Python. You can then use the "debugend" command to cause the simulator to throw an exception when it finishes. Then run python3 -m pdb boom.py builds/mybuild.txt , wait for the exception to trigger when the run finishes, and inspect the variables with pdb.
 
 
-###Todos
+### Todos
+
+If you feel like implementing these feel free to share.
+
+* More example builds
 * Accurate walk speeds
 * The rest of the tech tree
-* Gathering from a resource when there is significant walk time to the dropsite
+* Gathering from a resource when there is significant walk time to the dropsite. Note this still shouldn't involve literally walking back and forth to the dropsite. The gathering unit can still be stationary, it should just reduce the gathering rate.
 * Penalize woodcutting rate when number of woodcutters is very high
-* More accurate farming rate for <5 farmers on a field
+* The effect of baskets and wheelbarrow upgrades on net gather rates
 * Add approximate walk time between foundations when a unit is building multiple buildings "at a point"
+* More accurate farming rate for <5 farmers on a field

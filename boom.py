@@ -275,9 +275,6 @@ class Chicken(DepletableGather):
     def __init__(self, state, pos):
         super().__init__(state.chickenList, pos, FOOD, "chicken")
         
-    # TODO make sure there's an elephant or storehouse at the
-    # gather position, and a forest.
-
 # Build some number of fields around a cc or farmstead
 # (also building the farmstead if necessary)
 # until there are enough fields for us to take a spot
@@ -343,7 +340,6 @@ FOOD = 0
 WOOD = 1
 STONE = 2
 METAL = 3
-HOUSEPOP = 5
 
 resourceNames = ["food", "wood", "stone", "metal"]
 
@@ -392,14 +388,14 @@ class State:
         self.commands = open(commandFile).read().split("\n")
 
         self.summaryPeriod = 10
-        self.debugEnd = False
-        self.reportSurplus = None
+        self._debugEnd = False
+        self._reportSurplus = None
         self.surplusStep = 0
         self.stopwhen = "False"
 
     def tellAboutSurplus(self):
-        if self.reportSurplus != None:
-            f, w, s, m = self.reportSurplus
+        if self._reportSurplus != None:
+            f, w, s, m = self._reportSurplus
             if self.surplusStep != 0:
                 print("Surplus of", "{0:.0f}f {1:.0f}w {2:.0f}s {3:.0f}m".format(f, w, s, m), "occurred first at", "{0:03d}:{1:02d}".format(self.surplusStep // 60, self.surplusStep % 60), "and continued until the end.")
             else:
@@ -422,7 +418,7 @@ class State:
         if result == False:
             self.summary()
             self.tellAboutSurplus()
-            if self.debugEnd:
+            if self._debugEnd:
                 raise Exception("Run finished.")
         return result
 
@@ -489,7 +485,7 @@ class State:
 
     def preprocessCommand(self, command):
         "Add self. so the user doesn't have to put that everywhere in the command file."
-        selfcommands = "selectWorkers previousWorkerSelection selectBuilding build walk chop berries chicken farm train research setWaypoint setWaypointSchedule".split()
+        selfcommands = "setSummaryPeriod addForest addBerries addChicken debugEnd reportSurplus selectWorkers previousWorkerSelection selectBuilding build walk chop berries chicken farm train research setWaypoint setWaypointSchedule".split()
         for c in selfcommands:
             pattern = r"\b" + c + r"\s*\("
             command = re.subn(pattern, "self." + c + "(", command)[0]
@@ -499,10 +495,10 @@ class State:
         "Advance game time by one second. Returns False if done."
         if self.time % self.summaryPeriod == 0:
             self.summary()
-        if self.reportSurplus != None:
+        if self._reportSurplus != None:
             isAboveLevel = True
             for i in range(4):
-                if self.resources[i] < self.reportSurplus[i]:
+                if self.resources[i] < self._reportSurplus[i]:
                     isAboveLevel = False
             if self.surplusStep == 0:
                 if isAboveLevel:
@@ -515,8 +511,6 @@ class State:
         for command in stepCommands:
             exec(self.preprocessCommand(command))
         for worker in self.workers:
-            if self.time == 15 and worker.kind == "elephant":
-                assert(worker.actionQueue != [])
             if worker.actionQueue != []:
                 worker.actionQueue[-1].act(self, worker)
         for buildingKind in self.buildingLists:
@@ -524,8 +518,29 @@ class State:
                 if building.actionQueue != []:
                     building.actionQueue[-1].act(self, building)
         self.time += 1
+        if CIV == "pto": # trickle income
+            self.income[0] += 30
+            self.resources[0] += 1
         return self.checkOK(self.stopwhen)
 
+    def setSummaryPeriod(self, period):
+        self.summaryPeriod = period
+
+    def addForest(self, x, y, qty):
+        self.forestList.append([x, y, qty])
+
+    def addBerries(self, x, y, qty):
+        self.berriesList.append([x, y, qty])
+
+    def addChicken(self, x, y, qty):
+        self.chickenList.append([x, y, qty])
+
+    def debugEnd(self, debug=True):
+        self._debugEnd = debug
+
+    def reportSurplus(self, f, w, s, m):
+        self._reportSurplus = [f, w, s, m]
+        
     def doCommands(self):
         "execute all commands in the command file"
         stopTime = 0
@@ -541,33 +556,21 @@ class State:
                     if not self.step([]):
                         return
                 stepCommands.clear()
-            elif command[:7] == "skipby ":
-                self.summaryPeriod = int(command.split(" ")[1])
-            elif command[:7] == "forest ":
-                self.forestList.append(list(map(int, command.split()[1:4])))
-            elif command[:8] == "berries ":
-                self.berriesList.append(list(map(int, command.split()[1:4])))
-            elif command[:8] == "chicken ":
-                self.chickenList.append(list(map(int, command.split()[1:4])))
             elif command[:9] == "stopwhen ":
                 stopwhen = command[9:]
-            elif command[:8] == "debugend":
-                self.debugEnd = True
-            elif command[:14] == "reportsurplus ":
-                _, f, w, s, m = command.strip().split()
-                self.reportSurplus = [int(r.strip()) for r in [f, w, s, m]]
             else:
                 if command.strip() != "" and command.strip()[0] != "#":
                     stepCommands.append(command)
-        # if we weren't given an end time, run until at least 15 minutes
+        # if we weren't given an end time, run for 5 minutes
         if stepCommands != []:
+            startTime = self.time
             if not self.step(stepCommands):
                 return
-            while self.time < 900:
+            while self.time - startTime < 300:
                 if not self.step([]):
                     return
         self.tellAboutSurplus()
-        if self.debugEnd:
+        if self._debugEnd:
             raise Exception("Run finished.")
 
 
@@ -598,9 +601,9 @@ class State:
     def previousWorkerSelection(self):
         return self.previousSelection
     
-    def selectBuilding(self, kind, pos=None, num=None):
-        if num != None:
-            return self.buildingLists[kind][num-1]
+    def selectBuilding(self, kind, pos=None, index=None):
+        if index != None:
+            return self.buildingLists[kind][index-1]
         buildings = [b for b in self.buildingLists[kind] if pos == None or posEqual(b.position, pos)]
         # give priority to idle buildings
         idleBuildings = [b for b in buildings if b.actionQueue == []]
@@ -697,51 +700,110 @@ class State:
 
 # maps an unit or building to the resources needed to train/build it.  [food, wood, stone, metal, time]
 costs = {}
-costs["horse"] = [100,50,0,0,15]
-costs["sheep"] = [50,0,0,0,40]
-costs["male"] = [50,50,0,0,10]
-costs["female"] = [50,0,0,0,8]
-costs["trader"] = [100,0,0,80,15]
-costs["champ"] = [150,80,0,100,25]
-costs["elephant"] = [100,0,0,0,11]
-units = "horse sheep man woman trader champ".split()
 
-costs["house"] = [0, 75, 0, 0, 30]
-costs["storehouse"] = [0, 100, 0, 0, 40]
-costs["farmstead"] = [0, 100, 0, 0, 45]
-costs["cc"] = [0, 300, 300, 250, 500]
-costs["corral"] = [0, 100, 0, 0, 50]
-costs["barracks"] = [0, 300, 0, 0, 150]
-costs["temple"] = [0, 0, 300, 0, 200]
-costs["market"] = [0, 300, 0, 0, 150]
-costs["blacksmith"] = [0, 200, 0, 0, 120]
-costs["tower"] = [0, 100, 100, 0, 150]
-costs["field"] = [0,100,0,0,50]
-costs["castle"] = [0, 300, 600, 0, 450]
-structures = "house storehouse farmstead cc corral barracks temple market blacksmith tower field castle".split()
+HOUSEPOP = 5
+CIV="mau"
 
-costs["up_chop1"] = [ 0, 200, 0, 100, 40, "storehouse"]
-costs["up_chop2"] = [ 0, 400, 0, 200, 50, "storehouse"]
-costs["up_chop3"] = [ 0, 600, 0, 300, 60, "storehouse"]
-costs["up_stone1"] = [ 200, 0, 100, 0, 40, "storehouse"]
-costs["up_stone2"] = [ 300, 0, 200, 0, 50, "storehouse"]
-costs["up_stone3"] = [ 400, 0, 300, 0, 60, "storehouse"]
-costs["up_metal1"] = [ 200, 0, 0, 100, 40, "storehouse"]
-costs["up_metal2"] = [ 300, 0, 0, 200, 50, "storehouse"]
-costs["up_metal3"] = [ 400, 0, 0, 300, 60, "storehouse"]
-costs["up_gather"] = [ 0, 100, 0, 0, 40, "farmstead"]
-costs["up_farm1"] = [ 0, 200, 0, 100, 40, "farmstead"]
-costs["up_farm2"] = [ 0, 300, 0, 100, 50, "farmstead"]
-costs["up_farm3"] = [ 0, 400, 0, 100, 60, "farmstead"]
-costs["up_trade1"] = [ 0, 150, 0, 150, 40, "market"]
-costs["up_trade2"] = [ 0, 300, 0, 300, 40, "market"]
+def setMauryas():
+    global CIV, HOUSEPOP
+    costs["horse"] = [100,50,0,0,15]
+    costs["sheep"] = [50,0,0,0,40]
+    costs["male"] = [50,50,0,0,10]
+    costs["female"] = [50,0,0,0,8]
+    costs["trader"] = [100,0,0,80,15]
+    costs["champ"] = [150,80,0,100,25]
+    costs["elephant"] = [100,0,0,0,11]
+    units = "horse sheep male female trader champ".split()
 
+    costs["house"] = [0, 75, 0, 0, 30]
+    HOUSEPOP = 5
+    costs["storehouse"] = [0, 100, 0, 0, 40]
+    costs["farmstead"] = [0, 100, 0, 0, 45]
+    costs["field"] = [0, 100, 0, 0, 50]
+    costs["dock"] = [0, 200, 0, 0, 150]
+    costs["cc"] = [0, 300, 300, 250, 500]
+    costs["corral"] = [0, 100, 0, 0, 50]
+    costs["barracks"] = [0, 300, 0, 0, 150]
+    costs["temple"] = [0, 0, 150, 0, 100]
+    costs["market"] = [0, 300, 0, 0, 150]
+    costs["blacksmith"] = [0, 200, 0, 0, 120]
+    costs["tower"] = [0, 100, 100, 0, 150]
+    costs["elephantstable"] = [0, 200, 200, 0, 180]
+    costs["arsenal"] = [0, 300, 0, 0, 180]
+    costs["palace"] = [0, 0, 200, 200, 200]
+    costs["castle"] = [0, 300, 600, 0, 450]
 
+    costs["up_chop1"] = [ 0, 200, 0, 100, 40, "storehouse"]
+    costs["up_chop2"] = [ 0, 400, 0, 200, 50, "storehouse"]
+    costs["up_chop3"] = [ 0, 600, 0, 300, 60, "storehouse"]
+    costs["up_stone1"] = [ 200, 0, 100, 0, 40, "storehouse"]
+    costs["up_stone2"] = [ 300, 0, 200, 0, 50, "storehouse"]
+    costs["up_stone3"] = [ 400, 0, 300, 0, 60, "storehouse"]
+    costs["up_metal1"] = [ 200, 0, 0, 100, 40, "storehouse"]
+    costs["up_metal2"] = [ 300, 0, 0, 200, 50, "storehouse"]
+    costs["up_metal3"] = [ 400, 0, 0, 300, 60, "storehouse"]
+    costs["up_gather"] = [ 0, 100, 0, 0, 40, "farmstead"]
+    costs["up_farm1"] = [ 0, 200, 0, 100, 40, "farmstead"]
+    costs["up_farm2"] = [ 0, 300, 0, 100, 50, "farmstead"]
+    costs["up_farm3"] = [ 0, 400, 0, 100, 60, "farmstead"]
+    costs["up_trade1"] = [ 0, 150, 0, 150, 40, "market"]
+    costs["up_trade2"] = [ 0, 300, 0, 300, 40, "market"]
+
+    costs["II"] = [500, 500, 0, 0, 30]
+    costs["III"] = [0, 0, 750, 750, 60]
+
+    CIV = "mau"
+    
+setMauryas()
+
+# use abbreviations so the user can say "carth" or "carthage" or "carthaginians" and it will be understood
+civs = "ath bri car gau han ibe kus mac mau per pto rom sel spa".split()
+def resolveCiv(civ):
+    for c in civs:
+        if c == civ.strip().lower()[:3]:
+            return c
+    return None
+
+def setCiv(civ):
+    global CIV, HOUSEPOP
+    civ = resolveCiv(civ)
+    if civ == None:
+        raise Exception("What civ is " + civ + "?")
+    CIV = civ
+    setMauryas()
+    if civ == "mau":
+        return
+    if civ in "bri gau".split():
+        costs["temple"] = [0, 0, 300, 0, 200]
+    else:
+        costs["temple"] = [0, 300, 0, 0, 160]
+    # barracks
+    if civ in "ath car han ibe kus mac pto rom sel spa".split():
+        costs["barracks"] = [0, 200, 100, 0, 150]
+    elif civ == "per":
+        costs["barracks"] = [0, 160, 80, 0, 120]
+    elif civ in "bri gau".split():
+        costs["barracks"] = [0, 300, 0, 0, 120]
+
+    # house
+    if civ in "ath car han kus mac per rom sel spa".split():
+        costs["house"] = [0, 150, 0, 0, 50]
+        HOUSEPOP = 10
+    elif civ in "bri gau".split():
+        costs["house"] = [0, 75, 0, 0, 24]
+    elif civ == "pto":
+        costs["house"] = [0, 45, 0, 0, 45]
+    # Iberians have the same house type as Mauryas
+
+    if civ == "ath":
+        costs["II"] = [350, 350, 0, 0, 15]
+        costs["III"] = [0, 0, 525, 525, 30]
+    
 import sys
 
 if __name__== "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python boom2.py <commandfile>")
+        print("Usage: python3 boom.py <commandfile>")
         quit()
     filename = sys.argv[1]
     state = State(filename)

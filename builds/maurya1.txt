@@ -43,7 +43,7 @@ train(cc, "female", 5, queued=True, repeating=True, maxBatching=True)
 # Women produced from the CC will go chop wood between population 11 and 12.
 # between population 13 and 27, they will chop wood.
 # between population 28 and 41, they will build farms and start farming
-# beween population 42 and 46, they will be idle (we'll give them orders then)
+# between population 42 and 46, they will be idle (we'll give them orders then)
 # after population 47 they will chop wood.
 setWaypointSchedule(cc, [(11, ((-5, 0), "berries")), (13, ((10, 0), "chop")), (28, (None, "farm")), (42, (None, "idle")), (47, (None, "chop"))])
 
@@ -55,7 +55,6 @@ research(selectBuilding("farmstead"), "up_gather")
 # and at 0:46 we have just enough wood to start a second
 time 00:46
 build(selectWorkers("elephant"), "house")
-# If uncommented, this will stop the simulation as soon as the pop goes over 50.
 
 # at 1:17 the elephant is done with the second house.  There's not
 # enough room for the elephant to make more than two houses while
@@ -200,10 +199,3 @@ build(selectWorkers("female", "chop", num=5), "barracks", (10, 10))
 farm(previousWorkerSelection(), queued=True)
 
 time 12:00
-
-# time 06:42
-# build(selectWorkers("female", "chop", num=5), "barracks", (4, 4))
-# farm(previousWorkerSelection(), queued=True)
-
-# time 08:00
-# #research(selectBuilding("storehouse"), "up_chop1")

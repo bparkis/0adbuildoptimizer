@@ -1,21 +1,22 @@
-# set up the map. forest 10 0 5000 means there is a forest at coordinate (10, 0) - which is 10 seconds of walk time away from the CC - with 5000 wood available.
+# set up the map. addForest(10, 0, 5000) means there is a forest at coordinate (10, 0) - which is 10 seconds of walk time away from the CC - with 5000 wood available.
 # 5000 is around the amount of wood you would chop before you would need a second storehouse.
-forest 10 0 5000
-forest 11 0 5000
-forest 12 0 5000
-forest 13 0 5000
-forest 14 0 5000
-forest 15 0 5000
-berries -5 0 1000
-chicken 0 0 400
+addForest(10, 0, 5000)
+addForest(11, 0, 5000)
+addForest(12, 0, 5000)
+addForest(13, 0, 5000)
+addForest(14, 0, 5000)
+addForest(15, 0, 5000)
+addBerries(-5, 0, 1000)
+addChicken(0, 0, 400)
 
-skipby 1 # show a summary every 1 second
-debugend # always throw an exception when we finish, to allow pdb debugging of the detailed state. e.g. with python3 -m pdb boom.py builds/maurya1.txt
-#stopwhen pop > 50
+setCiv("Mauryas")
+setSummaryPeriod(1) # show a summary every 1 second
+debugEnd() # always throw an exception when we finish, to allow pdb debugging of the detailed state. e.g. with python3 -m pdb boom.py builds/maurya1.txt
+
 # This will report the first time when wood went over 300
 # and stayed that way until the end. Useful for deciding when we are
 # able to build stuff without interfering with any other production.
-reportsurplus 0 300 0 0
+reportSurplus(0, 300, 0, 0)
 
 
 # men chop with elephant dropsite, women make berries farmstead, horse on chickens, elephant makes a house at wood
@@ -39,10 +40,11 @@ train(cc, "female", 4)
 train(cc, "female", 5, queued=True, repeating=True, maxBatching=True)
 
 # Set a schedule for what the women will do after being produced.
-# Women produced from the CC will go chop wood between population 10 and 21.
-# between population 22 and 26, they will go on berries.
-# between population 27 and 29, they will chop wood
-# after population 30 they will build fields and start farming
+# Women produced from the CC will go chop wood between population 11 and 12.
+# between population 13 and 27, they will chop wood.
+# between population 28 and 41, they will build farms and start farming
+# beween population 42 and 46, they will be idle (we'll give them orders then)
+# after population 47 they will chop wood.
 setWaypointSchedule(cc, [(11, ((-5, 0), "berries")), (13, ((10, 0), "chop")), (28, (None, "farm")), (42, (None, "idle")), (47, (None, "chop"))])
 
 # wait until 28 seconds into the game, because now the farmstead is done and we can research the berry upgrade
@@ -119,13 +121,12 @@ time 07:09
 build(selectWorkers("male female", "chop"), "storehouse", pos=(11, 0), queued=True)
 chop(selectWorkers("male female", "chop"), pos=(11, 0), queued=True)
 chop(selectWorkers("male", "walk"), pos=(11, 0), queued=True)
-setWaypoint(selectBuilding("barracks", num=1), (11, 0), "chop")
-setWaypoint(selectBuilding("barracks", num=2), (11, 0), "chop")
-setWaypoint(selectBuilding("barracks", num=3), (11, 0), "chop")
+setWaypoint(selectBuilding("barracks", index=1), (11, 0), "chop")
+setWaypoint(selectBuilding("barracks", index=2), (11, 0), "chop")
+setWaypoint(selectBuilding("barracks", index=3), (11, 0), "chop")
 setWaypoint(cc, (11, 0), "chop")
 
 time 07:27
-# finally!
 build(selectWorkers("female", "chop", num=1), "house", (10, 1), repeating=True)
 
 time 08:00
@@ -157,9 +158,9 @@ farm(selectWorkers("female", "chop", num=5))
 time 09:36
 chop(selectWorkers("male female", "chop"), pos=(12, 0), queued=True)
 chop(selectWorkers("male", "walk"), pos=(12, 0), queued=True)
-setWaypoint(selectBuilding("barracks", num=1), (12, 0), "chop")
-setWaypoint(selectBuilding("barracks", num=2), (12, 0), "chop")
-setWaypoint(selectBuilding("barracks", num=3), (12, 0), "chop")
+setWaypoint(selectBuilding("barracks", index=1), (12, 0), "chop")
+setWaypoint(selectBuilding("barracks", index=2), (12, 0), "chop")
+setWaypoint(selectBuilding("barracks", index=3), (12, 0), "chop")
 setWaypoint(cc, (12, 0), "chop")
 
 time 09:40

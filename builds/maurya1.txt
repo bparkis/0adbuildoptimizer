@@ -40,7 +40,7 @@ train(cc, "female", 4)
 train(cc, "female", 5, queued=True, repeating=True, maxBatching=True)
 
 # Set a schedule for what the women will do after being produced.
-# Women produced from the CC will go chop wood between population 11 and 12.
+# Women produced from the CC will go to berries between population 11 and 12.
 # between population 13 and 27, they will chop wood.
 # between population 28 and 41, they will build farms and start farming
 # between population 42 and 46, they will be idle (we'll give them orders then)
